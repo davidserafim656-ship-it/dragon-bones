@@ -13,6 +13,7 @@ const comboEl = document.querySelector('#combo');
 const questEl = document.querySelector('#quest');
 const questTitleEl = document.querySelector('#questTitle');
 const questTextEl = document.querySelector('#questText');
+const questLoreEl = document.querySelector('#questLore');
 const questProgressEl = document.querySelector('#questProgress');
 const toastEl = document.querySelector('#toast');
 const startScreen = document.querySelector('#startScreen');
@@ -29,6 +30,15 @@ const authScreen = document.querySelector('#authScreen');
 const googleLoginBtn = document.querySelector('#googleLoginBtn');
 const guestBtn = document.querySelector('#guestBtn');
 const authMessage = document.querySelector('#authMessage');
+const customizeScreen = document.querySelector('#customizeScreen');
+const customizeBtn = document.querySelector('#customizeBtn');
+const startCustomizeBtn = document.querySelector('#startCustomizeBtn');
+const closeCustomizeBtn = document.querySelector('#closeCustomizeBtn');
+const applyStyleBtn = document.querySelector('#applyStyleBtn');
+const selectedStyleEl = document.querySelector('#selectedStyle');
+const styleGrid = document.querySelector('#styleGrid');
+const previewCanvas = document.querySelector('#dragonPreview');
+const previewCtx = previewCanvas.getContext('2d');
 
 let dpr = 1, W = 0, H = 0;
 function resize(){
@@ -57,6 +67,16 @@ let best=0;
 try{best=Number(localStorage.getItem('dragonBonesBest'))||0}catch(e){console.warn('Recorde local indisponível',e)}
 bestEl.textContent=best;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DRAGON_STYLES={
+  spectral:{name:'ESPECTRAL',bone:'#e9ebe4',shade:'#9fa8a1',spine:'#d9dfd8',glow:'#67ffe0',horn:'#d6dcd4'},
+  ember:{name:'BRASA',bone:'#ead8ca',shade:'#9f7467',spine:'#d8b9a7',glow:'#ff7048',horn:'#6d3932'},
+  frost:{name:'GEADA',bone:'#e7f4f7',shade:'#8baebd',spine:'#c5e1e8',glow:'#75caff',horn:'#b6dce8'},
+  royal:{name:'REGENTE',bone:'#eee3c5',shade:'#a88d58',spine:'#d8c99e',glow:'#ffd36a',horn:'#c69b45'}
+};
+let selectedStyleKey='spectral';
+try{selectedStyleKey=localStorage.getItem('dragonBonesStyle')||'spectral'}catch(e){}
+if(!DRAGON_STYLES[selectedStyleKey])selectedStyleKey='spectral';
+let previewStyleKey=selectedStyleKey;
 function pointer(x,y){ input.x=x; input.y=y; input.active=true; tipEl.style.opacity=.15; unlockAudio(); }
 
 function clickExplosion(x,y){
@@ -140,13 +160,68 @@ function burst(x,y,color='#70ffe1',amount=12){
   for(let i=0;i<amount;i++) particles.push({x,y,vx:rand(-130,130),vy:rand(-130,130),life:1,size:rand(2,5),color});
 }
 function toast(text){toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>toastEl.classList.remove('show'),1800)}
-const quests=[{n:'DESPERTAR',t:'Colete 10 ossos',goal:10},{n:'ASCENSÃO',t:'Alcance um combo de 5×',goal:5,combo:true},{n:'ANCIÃO',t:'Colete 50 ossos',goal:50}];
+const quests=[
+  {n:'O PRIMEIRO SELO',t:'Reúna 10 fragmentos',l:'Os ossos guardam a memória do reino.',goal:10},
+  {n:'O SELO DA CHAMA',t:'Desperte um combo de 5×',l:'A chama só responde a um espírito audaz.',goal:5,combo:true},
+  {n:'O NOME PERDIDO',t:'Recupere 50 fragmentos',l:'Complete o nome do último dragão.',goal:50}
+];
 let questIndex=0;
 function updateQuest(){
  const q=quests[Math.min(questIndex,quests.length-1)],value=q.combo?me.combo:me.score;
- questTitleEl.textContent=q.n;questTextEl.textContent=q.t;questProgressEl.textContent=`${Math.min(value,q.goal)} / ${q.goal}`;
- if(value>=q.goal&&questIndex<quests.length){questEl.classList.add('complete');toast(`MISSÃO CONCLUÍDA · ${q.n}`);blip(740,.18,'triangle',.05);questIndex++;setTimeout(()=>{questEl.classList.remove('complete');updateQuest()},900)}
+ questTitleEl.textContent=q.n;questTextEl.textContent=q.t;questLoreEl.textContent=q.l;questProgressEl.textContent=`${Math.min(value,q.goal)} / ${q.goal}`;
+ if(value>=q.goal&&questIndex<quests.length){questEl.classList.add('complete');toast(`SELO RESTAURADO · ${q.n}`);blip(740,.18,'triangle',.05);questIndex++;setTimeout(()=>{questEl.classList.remove('complete');updateQuest()},900)}
 }
+
+let customizationWasPaused=false;
+function drawCustomizationPreview(){
+  const c=previewCtx,s=DRAGON_STYLES[previewStyleKey];
+  c.clearRect(0,0,previewCanvas.width,previewCanvas.height);
+  const glow=c.createRadialGradient(250,105,10,250,105,170);
+  glow.addColorStop(0,s.glow+'2f');glow.addColorStop(1,'transparent');
+  c.fillStyle=glow;c.fillRect(0,0,previewCanvas.width,previewCanvas.height);
+  c.save();c.translate(82,108);c.lineCap='round';c.lineJoin='round';
+  c.strokeStyle=s.spine;c.lineWidth=7;
+  c.beginPath();c.moveTo(0,18);c.bezierCurveTo(55,-15,95,28,154,4);c.stroke();
+  for(let i=0;i<7;i++){c.fillStyle=s.bone;c.beginPath();c.ellipse(i*23,10-Math.sin(i)*8,8,5,-.25,0,Math.PI*2);c.fill()}
+  c.translate(150,0);
+  c.fillStyle=s.bone;c.strokeStyle=s.shade;c.lineWidth=2;
+  c.beginPath();c.moveTo(-5,-31);c.quadraticCurveTo(38,-42,76,-16);c.lineTo(116,-5);c.quadraticCurveTo(124,5,110,15);c.lineTo(53,25);c.quadraticCurveTo(14,34,-8,16);c.quadraticCurveTo(-20,-7,-5,-31);c.closePath();c.fill();c.stroke();
+  c.fillStyle=s.horn;c.beginPath();c.moveTo(2,-28);c.lineTo(-35,-62);c.lineTo(25,-34);c.closePath();c.fill();
+  c.fillStyle='#071014';c.beginPath();c.ellipse(49,-10,13,11,0,0,Math.PI*2);c.fill();
+  c.shadowBlur=22;c.shadowColor=s.glow;c.fillStyle=s.glow;c.beginPath();c.ellipse(53,-10,4,8,0,0,Math.PI*2);c.fill();c.shadowBlur=0;
+  c.restore();
+}
+function selectDragonStyle(key){
+  if(!DRAGON_STYLES[key])return;
+  previewStyleKey=key;
+  styleGrid.querySelectorAll('[data-style]').forEach(button=>button.classList.toggle('selected',button.dataset.style===key));
+  selectedStyleEl.textContent=`ESSÊNCIA ${DRAGON_STYLES[key].name}`;
+  drawCustomizationPreview();
+}
+function openCustomization(){
+  customizationWasPaused=paused;
+  if(started)paused=true;
+  customizeScreen.classList.add('visible');
+  selectDragonStyle(selectedStyleKey);
+}
+function closeCustomization(){
+  customizeScreen.classList.remove('visible');
+  if(started)paused=customizationWasPaused;
+  last=performance.now();
+}
+styleGrid.addEventListener('click',event=>{
+  const button=event.target.closest('[data-style]');
+  if(button)selectDragonStyle(button.dataset.style);
+});
+customizeBtn.addEventListener('click',openCustomization);
+startCustomizeBtn.addEventListener('click',openCustomization);
+closeCustomizeBtn.addEventListener('click',closeCustomization);
+applyStyleBtn.addEventListener('click',()=>{
+  selectedStyleKey=previewStyleKey;
+  try{localStorage.setItem('dragonBonesStyle',selectedStyleKey)}catch(e){}
+  closeCustomization();
+  toast(`FORMA ${DRAGON_STYLES[selectedStyleKey].name} DESPERTADA`);
+});
 
 const remote = new Map();
 let channel=null;
@@ -386,6 +461,7 @@ function drawBackground(camX,camY){
 
 function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpen=0){
   const segs=bodySegments || segments;
+  const dragonStyle=ghost?DRAGON_STYLES.spectral:DRAGON_STYLES[selectedStyleKey];
   ctx.save();
   // Draw the skeleton relative to its head at the dragon world position.
   ctx.translate(x,y);
@@ -400,7 +476,7 @@ function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpe
     ctx.strokeStyle=`rgba(225,232,226,${.46+fade*.42})`;
     ctx.lineWidth=(3.2+fade*6)*scale;
     ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
-    ctx.fillStyle='#d9dfd8';
+    ctx.fillStyle=dragonStyle.spine;
     ctx.beginPath(); ctx.ellipse(sx,sy,(4+fade*5)*scale,(2.6+fade*3)*scale,a.angle,0,Math.PI*2);ctx.fill();
   }
 
@@ -409,7 +485,7 @@ function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpe
   if(base){
     const bx=base.x-x, by=base.y-y, ba=base.angle;
     ctx.save();ctx.translate(bx,by);ctx.rotate(ba);
-    ctx.strokeStyle='#dfe4dc';ctx.lineWidth=2.4*scale;
+    ctx.strokeStyle=dragonStyle.bone;ctx.lineWidth=2.4*scale;
     for(let i=0;i<5;i++){
       const px=i*8*scale;
       const rib=20*scale*(1-i*.09);
@@ -436,13 +512,13 @@ function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpe
 
   // Neck bones
   ctx.save();ctx.rotate(ang);
-  ctx.strokeStyle='#e4e7df';ctx.lineWidth=8*scale;
+  ctx.strokeStyle=dragonStyle.bone;ctx.lineWidth=8*scale;
   ctx.beginPath();ctx.moveTo(-23*scale,0);ctx.lineTo(-4*scale,0);ctx.stroke();
-  ctx.fillStyle='#cdd4cb';
+  ctx.fillStyle=dragonStyle.spine;
   ctx.beginPath();ctx.ellipse(-16*scale,0,9*scale,6*scale,0,0,Math.PI*2);ctx.fill();
 
   // Skull - procedural, not an image
-  ctx.fillStyle='#e9ebe4';ctx.strokeStyle='#9fa8a1';ctx.lineWidth=1.7*scale;
+  ctx.fillStyle=dragonStyle.bone;ctx.strokeStyle=dragonStyle.shade;ctx.lineWidth=1.7*scale;
   ctx.beginPath();
   ctx.moveTo(-3*scale,-18*scale);
   ctx.quadraticCurveTo(17*scale,-23*scale,36*scale,-10*scale);
@@ -470,13 +546,13 @@ function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpe
   ctx.restore();
 
   // Horns
-  ctx.fillStyle='#d6dcd4';
+  ctx.fillStyle=dragonStyle.horn;
   ctx.beginPath();ctx.moveTo(2*scale,-15*scale);ctx.lineTo(-20*scale,-38*scale);ctx.lineTo(12*scale,-19*scale);ctx.closePath();ctx.fill();
   ctx.beginPath();ctx.moveTo(-2*scale,12*scale);ctx.lineTo(-21*scale,31*scale);ctx.lineTo(10*scale,15*scale);ctx.closePath();ctx.fill();
 
   // Eye socket + glow
   ctx.fillStyle='#071014';ctx.beginPath();ctx.ellipse(24*scale,-6*scale,8*scale,7*scale,0,0,Math.PI*2);ctx.fill();
-  ctx.shadowBlur=18*scale;ctx.shadowColor='#36ffd4';ctx.fillStyle='#67ffe0';
+  ctx.shadowBlur=18*scale;ctx.shadowColor=dragonStyle.glow;ctx.fillStyle=dragonStyle.glow;
   ctx.beginPath();ctx.ellipse(27*scale,-6*scale,2.4*scale,5*scale,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
 
   // Teeth

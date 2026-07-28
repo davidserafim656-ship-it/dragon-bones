@@ -7,6 +7,8 @@ Jogo arcade de exploração em Canvas 2D, com um dragão esquelético inteiramen
 - Dragão articulado que cresce conforme coleta ossos.
 - Ossos, runas e relíquias ancestrais com valores e efeitos distintos.
 - Sistema de combo, missões, recorde local e fogo espectral para aceleração.
+- Jornada dos Três Selos, com contexto narrativo para cada missão.
+- Cripta de personalização com quatro essências visuais persistentes.
 - Cenário atmosférico procedural, partículas, minimapa e feedback de impacto.
 - Controles por mouse, toque, setas ou WASD; pausa e som acessíveis pelo HUD e teclado.
 - Multiplayer opcional via Supabase Realtime.
