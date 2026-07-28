@@ -3,6 +3,7 @@
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
+const bgMusic = document.querySelector('#bgMusic');
 const scoreEl = document.querySelector('#score');
 const playersEl = document.querySelector('#players');
 const statusEl = document.querySelector('#status');
@@ -105,7 +106,7 @@ function clickExplosion(x,y){
   });
 }
 
-addEventListener('pointerdown',e=>clickExplosion(e.clientX,e.clientY));
+addEventListener('pointerdown',e=>{clickExplosion(e.clientX,e.clientY);startMusic()});
 canvas.addEventListener('pointermove',e=>pointer(e.clientX,e.clientY));
 canvas.addEventListener('pointerdown',e=>{pointer(e.clientX,e.clientY);input.boost=true});
 addEventListener('pointerup',()=>input.boost=false);
@@ -125,6 +126,12 @@ addEventListener('keyup',e=>{input.keys.delete(e.code);if(e.code==='Space')input
 canvas.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(t){pointer(t.clientX,t.clientY)}},{passive:true});
 
 let audioCtx=null;
+bgMusic.volume=.18;
+function startMusic(){
+  if(!soundOn||!bgMusic.paused)return;
+  bgMusic.play().catch(()=>{});
+}
+function pauseMusic(){bgMusic.pause()}
 function unlockAudio(){
   const AudioEngine=window.AudioContext||window.webkitAudioContext;
   if(!AudioEngine)return;
@@ -700,8 +707,8 @@ function frame(t){
   if(started&&!paused)update(dt,t);render();requestAnimationFrame(frame);
 }
 function togglePause(force){if(!started)return;paused=typeof force==='boolean'?force:!paused;pauseScreen.classList.toggle('visible',paused);pauseBtn.textContent=paused?'▶':'Ⅱ';last=performance.now()}
-function toggleSound(){soundOn=!soundOn;soundBtn.textContent=soundOn?'♪':'×';soundBtn.style.opacity=soundOn?'1':'.45';if(soundOn)unlockAudio()}
-document.querySelector('#startBtn').addEventListener('click',()=>{started=true;startScreen.classList.remove('visible');unlockAudio();toast('O DRAGÃO DESPERTOU');last=performance.now()});
+function toggleSound(){soundOn=!soundOn;soundBtn.textContent=soundOn?'♪':'×';soundBtn.style.opacity=soundOn?'1':'.45';if(soundOn){unlockAudio();startMusic()}else pauseMusic()}
+document.querySelector('#startBtn').addEventListener('click',()=>{started=true;startScreen.classList.remove('visible');unlockAudio();startMusic();toast('O DRAGÃO DESPERTOU');last=performance.now()});
 document.querySelector('#resumeBtn').addEventListener('click',()=>togglePause(false));pauseBtn.addEventListener('click',()=>togglePause());soundBtn.addEventListener('click',toggleSound);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started)togglePause(true)});
 updateQuest();requestAnimationFrame(frame);

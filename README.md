@@ -14,6 +14,9 @@ Jogo arcade de exploração em Canvas 2D, com um dragão esquelético inteiramen
 - Controles por mouse, toque, setas ou WASD; pausa e som acessíveis pelo HUD e teclado.
 - Multiplayer opcional via Supabase Realtime.
 - Layout responsivo e suporte a `prefers-reduced-motion`.
+- Trilha ambiente em loop com controle integrado de som.
+
+Créditos de recursos externos estão em `CREDITS.md`.
 
 ## Controles
 
