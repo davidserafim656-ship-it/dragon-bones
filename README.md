@@ -29,6 +29,16 @@ Sirva esta pasta com qualquer servidor estático. Exemplo: `python3 -m http.serv
 
 Preencha `SUPABASE_URL` e `SUPABASE_ANON_KEY` em `config.js`. Sem essas chaves, o jogo funciona normalmente em modo solo. Use `?room=nome` na URL para criar uma sala específica.
 
+## Login com Google
+
+O login reutiliza o projeto Supabase configurado em `config.js`:
+
+1. Em **Authentication > Providers > Google**, habilite o provedor com as credenciais do Google.
+2. Em **Authentication > URL Configuration**, use a URL pública do jogo como Site URL e Redirect URL.
+3. No Google Cloud Console, autorize a Callback URL exibida pelo Supabase.
+
+A sessão persiste automaticamente; o cabeçalho mostra nome, foto e a opção de sair.
+
 ## Publicação
 
 O projeto está pronto para hospedagem estática. Na Netlify, `netlify.toml` publica a raiz do repositório.

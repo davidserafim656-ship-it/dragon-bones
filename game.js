@@ -19,6 +19,12 @@ const startScreen = document.querySelector('#startScreen');
 const pauseScreen = document.querySelector('#pauseScreen');
 const soundBtn = document.querySelector('#soundBtn');
 const pauseBtn = document.querySelector('#pauseBtn');
+const loginBtn = document.querySelector('#loginBtn');
+const loginLabel = document.querySelector('#loginLabel');
+const profileEl = document.querySelector('#profile');
+const userAvatar = document.querySelector('#userAvatar');
+const userName = document.querySelector('#userName');
+const logoutBtn = document.querySelector('#logoutBtn');
 
 let dpr = 1, W = 0, H = 0;
 function resize(){
@@ -108,7 +114,8 @@ function eatSound(){ blip(650,.06,'triangle',.05); setTimeout(()=>blip(920,.07,'
 const id = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
 const me = {
   id, x:WORLD.w/2, y:WORLD.h/2, angle:0, score:0,
-  speed:0, length:16, targetX:WORLD.w/2, targetY:WORLD.h/2, energy:100, combo:0, comboTimer:0
+  speed:0, length:16, targetX:WORLD.w/2, targetY:WORLD.h/2, energy:100, combo:0, comboTimer:0,
+  biteTimer:0, jawOpen:0
 };
 
 const segments = [];
@@ -140,15 +147,78 @@ function updateQuest(){
 const remote = new Map();
 let channel=null;
 let lastNetSend=0;
+let supabaseClient=null;
+
+function getSupabaseClient(){
+  if(supabaseClient) return supabaseClient;
+  const cfg=window.GAME_CONFIG||{};
+  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) return null;
+  supabaseClient=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  return supabaseClient;
+}
+
+function showUser(user){
+  const loggedIn=Boolean(user);
+  loginBtn.hidden=loggedIn;
+  profileEl.hidden=!loggedIn;
+  if(!loggedIn) return;
+  const meta=user.user_metadata||{};
+  userName.textContent=meta.full_name||meta.name||user.email?.split('@')[0]||'Jogador';
+  const avatar=meta.avatar_url||meta.picture;
+  userAvatar.hidden=!avatar;
+  if(avatar) userAvatar.src=avatar;
+}
+
+async function initAuth(){
+  const client=getSupabaseClient();
+  if(!client){
+    loginLabel.textContent='CONFIGURAR LOGIN';
+    loginBtn.title='Adicione as chaves do Supabase em config.js';
+    return;
+  }
+  try{
+    const {data:{session}}=await client.auth.getSession();
+    showUser(session?.user);
+    client.auth.onAuthStateChange((_event,nextSession)=>showUser(nextSession?.user));
+  }catch(error){
+    console.warn('Não foi possível restaurar a sessão',error);
+    toast('LOGIN TEMPORARIAMENTE INDISPONÍVEL');
+  }
+}
+
+loginBtn.addEventListener('click',async()=>{
+  const client=getSupabaseClient();
+  if(!client){
+    toast('CONFIGURE O SUPABASE PARA ATIVAR O LOGIN');
+    return;
+  }
+  loginBtn.disabled=true;
+  loginLabel.textContent='CONECTANDO…';
+  const {error}=await client.auth.signInWithOAuth({
+    provider:'google',
+    options:{redirectTo:`${location.origin}${location.pathname}${location.search}`}
+  });
+  if(error){
+    console.warn(error);
+    toast('NÃO FOI POSSÍVEL ENTRAR');
+    loginBtn.disabled=false;
+    loginLabel.textContent='ENTRAR';
+  }
+});
+
+logoutBtn.addEventListener('click',async()=>{
+  const client=getSupabaseClient();
+  if(client) await client.auth.signOut();
+  toast('SESSÃO ENCERRADA');
+});
 
 async function initMultiplayer(){
-  const cfg=window.GAME_CONFIG||{};
-  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase){
+  const client=getSupabaseClient();
+  if(!client){
     statusEl.textContent='Solo';
     return;
   }
   try{
-    const client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
     const room=new URLSearchParams(location.search).get('room') || 'public';
     channel=client.channel('dragon-bones:'+room,{
       config:{presence:{key:id},broadcast:{self:false}}
@@ -181,10 +251,20 @@ async function initMultiplayer(){
     statusEl.textContent='Solo';
   }
 }
+initAuth();
 initMultiplayer();
 
 function update(dt,t){
   gameTime+=dt;
+  const biteDuration=reducedMotion?.16:.34;
+  if(me.biteTimer>0){
+    me.biteTimer=Math.max(0,me.biteTimer-dt);
+    const progress=1-me.biteTimer/biteDuration;
+    const biteArc=Math.sin(clamp(progress,0,1)*Math.PI);
+    me.jawOpen=lerp(me.jawOpen,biteArc,1-Math.pow(.00001,dt));
+  }else{
+    me.jawOpen=lerp(me.jawOpen,0,1-Math.pow(.0002,dt));
+  }
   const keyX=(input.keys.has('ArrowRight')||input.keys.has('KeyD')?1:0)-(input.keys.has('ArrowLeft')||input.keys.has('KeyA')?1:0);
   const keyY=(input.keys.has('ArrowDown')||input.keys.has('KeyS')?1:0)-(input.keys.has('ArrowUp')||input.keys.has('KeyW')?1:0);
   if(keyX||keyY){input.x=W/2+keyX*W*.35;input.y=H/2+keyY*H*.35;input.active=true}
@@ -223,6 +303,7 @@ function update(dt,t){
     if(Math.hypot(b.x-me.x,b.y-me.y)<35+b.r){
       const eaten=b.id;
       const value=b.type==='relic'?5:b.type==='rune'?2:1;
+      me.biteTimer=biteDuration;
       me.combo=me.comboTimer>0?Math.min(9,me.combo+1):1; me.comboTimer=2.35;
       me.score+=value; scoreEl.textContent=me.score;
       if(me.score>best){best=me.score;bestEl.textContent=best;try{localStorage.setItem('dragonBonesBest',best)}catch(e){}}
@@ -287,7 +368,7 @@ function drawBackground(camX,camY){
   ctx.strokeRect(-camX,-camY,WORLD.w,WORLD.h);
 }
 
-function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null){
+function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpen=0){
   const segs=bodySegments || segments;
   ctx.save();
   // Draw the skeleton relative to its head at the dragon world position.
@@ -356,11 +437,21 @@ function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null){
   ctx.quadraticCurveTo(-16*scale,0,-3*scale,-18*scale);
   ctx.closePath();ctx.fill();ctx.stroke();
 
-  // Lower jaw
+  // Lower jaw, animated around its rear hinge.
+  ctx.save();
+  ctx.translate(7*scale,10*scale);
+  ctx.rotate(jawOpen*.48);
+  ctx.translate(-7*scale,-10*scale);
   ctx.beginPath();
   ctx.moveTo(7*scale,10*scale);ctx.lineTo(48*scale,8*scale);
   ctx.quadraticCurveTo(31*scale,26*scale,5*scale,18*scale);
   ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#f8f4e8';
+  for(let i=0;i<4;i++){
+    const tx=(17+i*8)*scale;
+    ctx.beginPath();ctx.moveTo(tx,12*scale);ctx.lineTo((tx+2)*scale,6*scale);ctx.lineTo((tx+4)*scale,12*scale);ctx.fill();
+  }
+  ctx.restore();
 
   // Horns
   ctx.fillStyle='#d6dcd4';
@@ -410,7 +501,7 @@ function render(){
   }
   ctx.globalAlpha=1;
 
-  drawSkeletonDragon(me.x,me.y,me.angle,1,false,segments);
+  drawSkeletonDragon(me.x,me.y,me.angle,1,false,segments,me.jawOpen);
   ctx.restore();
 
   for(const p of remote.values()) drawRemote(p,camX,camY);

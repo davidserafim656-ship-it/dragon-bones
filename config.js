@@ -1,5 +1,6 @@
 window.GAME_CONFIG = {
-  // Preencha estes dois valores para ativar o multiplayer.
+  // Estas chaves ativam multiplayer e login Google via Supabase.
+  // Habilite o Google em Authentication > Providers no painel Supabase.
   SUPABASE_URL: "",
   SUPABASE_ANON_KEY: ""
 };
