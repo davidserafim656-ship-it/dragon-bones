@@ -48,6 +48,32 @@ try{best=Number(localStorage.getItem('dragonBonesBest'))||0}catch(e){console.war
 bestEl.textContent=best;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function pointer(x,y){ input.x=x; input.y=y; input.active=true; tipEl.style.opacity=.15; unlockAudio(); }
+
+function clickExplosion(x,y){
+  const explosion=document.createElement('span');
+  explosion.className='click-explosion';
+  explosion.style.left=`${x}px`;
+  explosion.style.top=`${y}px`;
+
+  const sparkCount=reducedMotion?5:10;
+  for(let i=0;i<sparkCount;i++){
+    const spark=document.createElement('i');
+    const angle=(Math.PI*2*i/sparkCount)+rand(-.2,.2);
+    const distance=rand(18,42);
+    spark.style.setProperty('--spark-x',`${Math.cos(angle)*distance}px`);
+    spark.style.setProperty('--spark-y',`${Math.sin(angle)*distance}px`);
+    spark.style.setProperty('--spark-size',`${rand(2,5)}px`);
+    spark.style.setProperty('--spark-delay',`${rand(0,45)}ms`);
+    explosion.appendChild(spark);
+  }
+
+  document.body.appendChild(explosion);
+  explosion.addEventListener('animationend',e=>{
+    if(e.target===explosion) explosion.remove();
+  });
+}
+
+addEventListener('pointerdown',e=>clickExplosion(e.clientX,e.clientY));
 canvas.addEventListener('pointermove',e=>pointer(e.clientX,e.clientY));
 canvas.addEventListener('pointerdown',e=>{pointer(e.clientX,e.clientY);input.boost=true});
 addEventListener('pointerup',()=>input.boost=false);
