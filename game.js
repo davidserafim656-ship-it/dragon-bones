@@ -202,6 +202,8 @@ function drawBackground(camX,camY){
 function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null){
   const segs=bodySegments || segments;
   ctx.save();
+  // Draw the skeleton relative to its head at the dragon world position.
+  ctx.translate(x,y);
   if(ghost) ctx.globalAlpha=.5;
 
   // Tail/spine: articulated vertebrae
