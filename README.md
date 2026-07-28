@@ -27,7 +27,7 @@ Sirva esta pasta com qualquer servidor estático. Exemplo: `python3 -m http.serv
 
 ## Multiplayer
 
-Preencha `SUPABASE_URL` e `SUPABASE_ANON_KEY` em `config.js`. Sem essas chaves, o jogo funciona normalmente em modo solo. Use `?room=nome` na URL para criar uma sala específica.
+Preencha `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` em `config.js`. Sem essas chaves, o jogo funciona normalmente em modo solo. Use `?room=nome` na URL para criar uma sala específica.
 
 ## Login com Google
 

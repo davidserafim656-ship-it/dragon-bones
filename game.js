@@ -156,8 +156,9 @@ let supabaseClient=null;
 function getSupabaseClient(){
   if(supabaseClient) return supabaseClient;
   const cfg=window.GAME_CONFIG||{};
-  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) return null;
-  supabaseClient=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const publicKey=cfg.SUPABASE_PUBLISHABLE_KEY||cfg.SUPABASE_ANON_KEY;
+  if(!cfg.SUPABASE_URL || !publicKey || !window.supabase) return null;
+  supabaseClient=window.supabase.createClient(cfg.SUPABASE_URL,publicKey);
   return supabaseClient;
 }
 
@@ -195,7 +196,7 @@ async function initAuth(){
 async function signInWithGoogle(){
   const client=getSupabaseClient();
   if(!client){
-    authMessage.textContent='Adicione SUPABASE_URL e SUPABASE_ANON_KEY em config.js.';
+    authMessage.textContent='Adicione SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY em config.js.';
     return;
   }
   googleLoginBtn.disabled=true;
