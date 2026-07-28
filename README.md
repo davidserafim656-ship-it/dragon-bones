@@ -9,6 +9,7 @@ Jogo arcade de exploração em Canvas 2D, com um dragão esquelético inteiramen
 - Sistema de combo, missões, recorde local e fogo espectral para aceleração.
 - Jornada dos Três Selos, com contexto narrativo para cada missão.
 - Cripta de personalização com quatro essências visuais persistentes.
+- Poderes especiais animados: Pulso, Tempestade de Ossos e Fenda.
 - Cenário atmosférico procedural, partículas, minimapa e feedback de impacto.
 - Controles por mouse, toque, setas ou WASD; pausa e som acessíveis pelo HUD e teclado.
 - Multiplayer opcional via Supabase Realtime.
@@ -20,6 +21,9 @@ Jogo arcade de exploração em Canvas 2D, com um dragão esquelético inteiramen
 | --- | --- |
 | Guiar | Mouse, toque, setas ou WASD |
 | Acelerar | Segurar clique/toque ou Espaço |
+| Pulso espectral | Q ou botão Pulso |
+| Tempestade de ossos | E ou botão Tempestade |
+| Salto pela fenda | R ou botão Fenda |
 | Pausar | P ou Esc |
 | Som | M |
 

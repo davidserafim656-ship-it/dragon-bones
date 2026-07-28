@@ -40,6 +40,7 @@ const selectedStyleEl = document.querySelector('#selectedStyle');
 const styleGrid = document.querySelector('#styleGrid');
 const previewCanvas = document.querySelector('#dragonPreview');
 const previewCtx = previewCanvas.getContext('2d');
+const powerButtons=[...document.querySelectorAll('.power-dock button')];
 
 let dpr = 1, W = 0, H = 0;
 function resize(){
@@ -113,7 +114,11 @@ addEventListener('blur',()=>{input.boost=false;input.keys.clear()});
 addEventListener('keydown',e=>{
   input.keys.add(e.code);
   if(e.code==='Space'){ input.boost=true; e.preventDefault(); }
-  if((e.code==='KeyP'||e.code==='Escape')&&started) togglePause();
+  if(e.code==='KeyQ')activatePower('pulse');
+  if(e.code==='KeyE')activatePower('storm');
+  if(e.code==='KeyR')activatePower('rift');
+  if(e.code==='Escape'&&customizeScreen.classList.contains('visible'))closeCustomization();
+  else if((e.code==='KeyP'||e.code==='Escape')&&started) togglePause();
   if(e.code==='KeyM') toggleSound();
 });
 addEventListener('keyup',e=>{input.keys.delete(e.code);if(e.code==='Space')input.boost=false});
@@ -157,9 +162,42 @@ const wisps=Array.from({length:55},()=>({x:rand(0,WORLD.w),y:rand(0,WORLD.h),r:r
 const landmarks=Array.from({length:18},(_,i)=>({x:rand(180,WORLD.w-180),y:rand(180,WORLD.h-180),r:rand(30,58),rot:rand(0,6.28),kind:i%3}));
 
 const particles=[];
+const powerFx=[];
+const powers={
+  pulse:{cooldown:0,max:7},
+  storm:{cooldown:0,max:11,active:0},
+  rift:{cooldown:0,max:5}
+};
 function burst(x,y,color='#70ffe1',amount=12){
   for(let i=0;i<amount;i++) particles.push({x,y,vx:rand(-130,130),vy:rand(-130,130),life:1,size:rand(2,5),color});
 }
+function activatePower(name){
+  if(!started||paused||customizeScreen.classList.contains('visible'))return;
+  const power=powers[name];
+  if(!power||power.cooldown>0)return;
+  power.cooldown=power.max;
+  const color=DRAGON_STYLES[selectedStyleKey].glow;
+  if(name==='pulse'){
+    powerFx.push({type:'pulse',x:me.x,y:me.y,life:1,duration:1,radius:0,color});
+    burst(me.x,me.y,color,reducedMotion?12:36);
+    shake=reducedMotion?0:8;blip(170,.45,'sine',.07);
+  }else if(name==='storm'){
+    power.active=4.5;
+    powerFx.push({type:'storm',x:me.x,y:me.y,life:4.5,duration:4.5,color});
+    me.energy=100;burst(me.x,me.y,color,reducedMotion?10:28);
+    toast('TEMPESTADE DE OSSOS');blip(280,.6,'sawtooth',.045);
+  }else{
+    const oldX=me.x,oldY=me.y;
+    me.x=clamp(me.x+Math.cos(me.angle)*330,45,WORLD.w-45);
+    me.y=clamp(me.y+Math.sin(me.angle)*330,45,WORLD.h-45);
+    powerFx.push({type:'rift',x:oldX,y:oldY,tx:me.x,ty:me.y,life:.65,duration:.65,color});
+    for(let i=0;i<28;i++)particles.push({x:lerp(oldX,me.x,i/27)+rand(-18,18),y:lerp(oldY,me.y,i/27)+rand(-18,18),vx:rand(-35,35),vy:rand(-35,35),life:rand(.4,1),size:rand(2,6),color});
+    shake=reducedMotion?0:12;flash=.18;blip(90,.32,'square',.055);
+  }
+  const button=document.querySelector(`[data-power="${name}"]`);
+  button.classList.remove('activate');void button.offsetWidth;button.classList.add('activate');
+}
+powerButtons.forEach(button=>button.addEventListener('click',()=>activatePower(button.dataset.power)));
 function toast(text){toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>toastEl.classList.remove('show'),1800)}
 const quests=[
   {n:'O PRIMEIRO SELO',t:'Reúna 10 fragmentos',l:'Os ossos guardam a memória do reino.',goal:10},
@@ -349,6 +387,32 @@ initMultiplayer();
 
 function update(dt,t){
   gameTime+=dt;
+  for(const [name,power] of Object.entries(powers)){
+    power.cooldown=Math.max(0,power.cooldown-dt);
+    if(power.active)power.active=Math.max(0,power.active-dt);
+    const button=document.querySelector(`[data-power="${name}"]`);
+    const ratio=power.cooldown/power.max;
+    button.disabled=ratio>0;
+    button.classList.toggle('ready',ratio===0);
+    button.querySelector('em').style.transform=`scaleY(${ratio})`;
+  }
+  for(const fx of powerFx){
+    fx.life-=dt;
+    if(fx.type==='pulse')fx.radius=(1-fx.life/fx.duration)*330;
+    if(fx.type==='storm'){fx.x=me.x;fx.y=me.y}
+  }
+  for(let i=powerFx.length-1;i>=0;i--)if(powerFx[i].life<=0)powerFx.splice(i,1);
+  const pulse=powerFx.find(fx=>fx.type==='pulse');
+  if(pulse){
+    for(const bone of bones){
+      const dx=me.x-bone.x,dy=me.y-bone.y,d=Math.hypot(dx,dy)||1;
+      if(d<330&&d>38){const force=(1-d/330)*720*dt;bone.x+=dx/d*force;bone.y+=dy/d*force}
+    }
+  }
+  if(powers.storm.active>0&&!reducedMotion&&Math.random()<dt*34){
+    const a=rand(0,Math.PI*2),r=rand(42,105);
+    particles.push({x:me.x+Math.cos(a)*r,y:me.y+Math.sin(a)*r,vx:-Math.sin(a)*150,vy:Math.cos(a)*150,life:.8,size:rand(2,5),color:DRAGON_STYLES[selectedStyleKey].glow});
+  }
   const biteDuration=reducedMotion?.16:.34;
   if(me.biteTimer>0){
     me.biteTimer=Math.max(0,me.biteTimer-dt);
@@ -361,8 +425,8 @@ function update(dt,t){
   const keyX=(input.keys.has('ArrowRight')||input.keys.has('KeyD')?1:0)-(input.keys.has('ArrowLeft')||input.keys.has('KeyA')?1:0);
   const keyY=(input.keys.has('ArrowDown')||input.keys.has('KeyS')?1:0)-(input.keys.has('ArrowUp')||input.keys.has('KeyW')?1:0);
   if(keyX||keyY){input.x=W/2+keyX*W*.35;input.y=H/2+keyY*H*.35;input.active=true}
-  const boosting=input.boost&&me.energy>1;
-  me.energy=clamp(me.energy+(boosting?-38:16)*dt,0,100);
+  const boosting=(input.boost||powers.storm.active>0)&&me.energy>1;
+  me.energy=powers.storm.active>0?100:clamp(me.energy+(boosting?-38:16)*dt,0,100);
   boostBar.style.transform=`scaleX(${me.energy/100})`;
   if(boosting&&!reducedMotion&&Math.random()<dt*25) particles.push({x:me.x-Math.cos(me.angle)*28,y:me.y-Math.sin(me.angle)*28,vx:-Math.cos(me.angle)*rand(80,180),vy:-Math.sin(me.angle)*rand(80,180),life:.7,size:rand(2,5),color:'#42e6d0'});
   const camX=clamp(me.x-W/2,0,Math.max(0,WORLD.w-W));
@@ -475,9 +539,10 @@ function drawSkeletonDragon(x,y,ang,scale=1,ghost=false,bodySegments=null,jawOpe
     const a=segs[i], b=segs[i-1];
     const sx=a.x-x, sy=a.y-y, ex=b.x-x, ey=b.y-y;
     const fade=1-i/segs.length;
-    ctx.strokeStyle=`rgba(225,232,226,${.46+fade*.42})`;
+    ctx.globalAlpha=.46+fade*.42;ctx.strokeStyle=dragonStyle.spine;
     ctx.lineWidth=(3.2+fade*6)*scale;
     ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+    ctx.globalAlpha=1;
     ctx.fillStyle=dragonStyle.spine;
     ctx.beginPath(); ctx.ellipse(sx,sy,(4+fade*5)*scale,(2.6+fade*3)*scale,a.angle,0,Math.PI*2);ctx.fill();
   }
@@ -589,6 +654,29 @@ function render(){
   }
   for(const b of bones) bonePath(b.x,b.y,b.r,b.rot,b.type,b.pulse);
 
+  for(const fx of powerFx){
+    const alpha=clamp(fx.life/fx.duration,0,1);
+    ctx.save();ctx.globalAlpha=alpha;
+    if(fx.type==='pulse'){
+      ctx.strokeStyle=fx.color;ctx.lineWidth=5;
+      ctx.shadowBlur=24;ctx.shadowColor=fx.color;
+      ctx.beginPath();ctx.arc(fx.x,fx.y,fx.radius,0,Math.PI*2);ctx.stroke();
+      ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(fx.x,fx.y,fx.radius*.72,0,Math.PI*2);ctx.stroke();
+    }else if(fx.type==='storm'){
+      ctx.translate(fx.x,fx.y);ctx.rotate(gameTime*2.8);
+      ctx.strokeStyle=fx.color;ctx.lineWidth=3;ctx.shadowBlur=18;ctx.shadowColor=fx.color;
+      for(let ring=0;ring<3;ring++){
+        ctx.rotate(Math.PI*2/3);ctx.beginPath();ctx.arc(0,0,58+ring*20,ring*.8,ring*.8+Math.PI*1.15);ctx.stroke();
+      }
+      for(let i=0;i<8;i++){const a=i*Math.PI/4-gameTime*5,r=76+Math.sin(gameTime*4+i)*16;ctx.fillStyle='#f4efe2';ctx.fillRect(Math.cos(a)*r-4,Math.sin(a)*r-2,9,4)}
+    }else if(fx.type==='rift'){
+      const width=22*(fx.life/fx.duration);
+      ctx.strokeStyle=fx.color;ctx.lineWidth=width;ctx.shadowBlur=28;ctx.shadowColor=fx.color;
+      ctx.beginPath();ctx.moveTo(fx.x,fx.y);ctx.lineTo(fx.tx,fx.ty);ctx.stroke();
+      ctx.strokeStyle='#eaffff';ctx.lineWidth=2;ctx.stroke();
+    }
+    ctx.restore();
+  }
   for(const p of particles){
     ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle='#70ffe1';
     ctx.fillStyle=p.color||'#70ffe1';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
