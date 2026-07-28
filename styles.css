@@ -38,3 +38,4 @@
   .auth-card{padding:16px 22px}.auth-emblem{display:none}.auth-card h2{margin-top:4px;font-size:21px}.auth-card p{margin-bottom:10px}.google-login,.guest-login{height:40px;min-height:40px}.new-badge{top:7px}
   .customize-panel{display:grid;grid-template-columns:1fr 1.2fr;gap:12px;align-items:start}.customize-head{grid-column:1}.customize-head p{display:none}#dragonPreview{grid-column:1;height:105px;margin:0}.style-grid{grid-column:2;grid-row:1/3}.customize-foot{grid-column:2;position:static;margin:0;padding:8px 0 0}
 }
+.actions #soundBtn.needs-interaction{color:#ffd36a;animation:sound-alert 1s ease-in-out infinite}@keyframes sound-alert{50%{text-shadow:0 0 14px #ffd36a;transform:scale(1.12)}}

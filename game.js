@@ -129,9 +129,14 @@ let audioCtx=null;
 bgMusic.volume=.18;
 function startMusic(){
   if(!soundOn||!bgMusic.paused)return;
-  bgMusic.play().catch(()=>{});
+  bgMusic.muted=false;
+  bgMusic.play().catch(error=>{
+    console.warn('Reprodução de música bloqueada',error);
+    soundBtn.classList.add('needs-interaction');
+  });
 }
 function pauseMusic(){bgMusic.pause()}
+bgMusic.addEventListener('playing',()=>soundBtn.classList.remove('needs-interaction'));
 function unlockAudio(){
   const AudioEngine=window.AudioContext||window.webkitAudioContext;
   if(!AudioEngine)return;
