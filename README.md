@@ -1,24 +1,34 @@
-# Dragon Bones Online — versão articulada
+# Dragon Bones
 
-Jogo de navegador em Canvas 2D.
+Jogo arcade de exploração em Canvas 2D, com um dragão esquelético inteiramente procedural.
 
-## O que mudou
-- O dragão NÃO usa uma imagem pronta.
-- Corpo esquelético desenhado proceduralmente.
-- Coluna formada por vértebras articuladas.
-- Caixa torácica, asas ósseas, pescoço e crânio acompanham o movimento.
-- Mouse e toque controlam a direção.
-- Ossos aparecem pelo mapa e fazem o dragão crescer.
-- Efeitos sonoros simples via Web Audio.
+## Destaques
+
+- Dragão articulado que cresce conforme coleta ossos.
+- Ossos, runas e relíquias ancestrais com valores e efeitos distintos.
+- Sistema de combo, missões, recorde local e fogo espectral para aceleração.
+- Cenário atmosférico procedural, partículas, minimapa e feedback de impacto.
+- Controles por mouse, toque, setas ou WASD; pausa e som acessíveis pelo HUD e teclado.
 - Multiplayer opcional via Supabase Realtime.
-- Compatível com hospedagem estática na Netlify.
+- Layout responsivo e suporte a `prefers-reduced-motion`.
 
-## Netlify
-Envie o CONTEÚDO desta pasta para o deploy, de forma que `index.html` fique na raiz publicada.
+## Controles
+
+| Ação | Controle |
+| --- | --- |
+| Guiar | Mouse, toque, setas ou WASD |
+| Acelerar | Segurar clique/toque ou Espaço |
+| Pausar | P ou Esc |
+| Som | M |
+
+## Executar
+
+Sirva esta pasta com qualquer servidor estático. Exemplo: `python3 -m http.server 8080`.
 
 ## Multiplayer
-Abra `config.js` e preencha:
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
 
-Sem isso, o jogo continua funcionando em modo solo.
+Preencha `SUPABASE_URL` e `SUPABASE_ANON_KEY` em `config.js`. Sem essas chaves, o jogo funciona normalmente em modo solo. Use `?room=nome` na URL para criar uma sala específica.
+
+## Publicação
+
+O projeto está pronto para hospedagem estática. Na Netlify, `netlify.toml` publica a raiz do repositório.
