@@ -25,6 +25,10 @@ const profileEl = document.querySelector('#profile');
 const userAvatar = document.querySelector('#userAvatar');
 const userName = document.querySelector('#userName');
 const logoutBtn = document.querySelector('#logoutBtn');
+const authScreen = document.querySelector('#authScreen');
+const googleLoginBtn = document.querySelector('#googleLoginBtn');
+const guestBtn = document.querySelector('#guestBtn');
+const authMessage = document.querySelector('#authMessage');
 
 let dpr = 1, W = 0, H = 0;
 function resize(){
@@ -167,13 +171,15 @@ function showUser(user){
   const avatar=meta.avatar_url||meta.picture;
   userAvatar.hidden=!avatar;
   if(avatar) userAvatar.src=avatar;
+  authScreen.classList.remove('visible');
 }
 
 async function initAuth(){
   const client=getSupabaseClient();
   if(!client){
-    loginLabel.textContent='CONFIGURAR LOGIN';
-    loginBtn.title='Adicione as chaves do Supabase em config.js';
+    authMessage.textContent='Login aguardando as credenciais do Supabase.';
+    googleLoginBtn.disabled=true;
+    loginBtn.title='Login ainda não configurado';
     return;
   }
   try{
@@ -186,29 +192,38 @@ async function initAuth(){
   }
 }
 
-loginBtn.addEventListener('click',async()=>{
+async function signInWithGoogle(){
   const client=getSupabaseClient();
   if(!client){
-    toast('CONFIGURE O SUPABASE PARA ATIVAR O LOGIN');
+    authMessage.textContent='Adicione SUPABASE_URL e SUPABASE_ANON_KEY em config.js.';
     return;
   }
-  loginBtn.disabled=true;
-  loginLabel.textContent='CONECTANDO…';
+  googleLoginBtn.disabled=true;
+  googleLoginBtn.lastChild.textContent=' CONECTANDO…';
+  authMessage.textContent='';
   const {error}=await client.auth.signInWithOAuth({
     provider:'google',
     options:{redirectTo:`${location.origin}${location.pathname}${location.search}`}
   });
   if(error){
     console.warn(error);
-    toast('NÃO FOI POSSÍVEL ENTRAR');
-    loginBtn.disabled=false;
-    loginLabel.textContent='ENTRAR';
+    authMessage.textContent='Não foi possível conectar. Verifique o provedor Google no Supabase.';
+    googleLoginBtn.disabled=false;
+    googleLoginBtn.lastChild.textContent=' CONTINUAR COM GOOGLE';
   }
+}
+
+loginBtn.addEventListener('click',()=>authScreen.classList.add('visible'));
+googleLoginBtn.addEventListener('click',signInWithGoogle);
+guestBtn.addEventListener('click',()=>{
+  authScreen.classList.remove('visible');
+  toast('JOGANDO COMO CONVIDADO');
 });
 
 logoutBtn.addEventListener('click',async()=>{
   const client=getSupabaseClient();
   if(client) await client.auth.signOut();
+  authScreen.classList.add('visible');
   toast('SESSÃO ENCERRADA');
 });
 
