@@ -33,6 +33,7 @@ const authMessage = document.querySelector('#authMessage');
 const customizeScreen = document.querySelector('#customizeScreen');
 const customizeBtn = document.querySelector('#customizeBtn');
 const startCustomizeBtn = document.querySelector('#startCustomizeBtn');
+const authCustomizeBtn = document.querySelector('#authCustomizeBtn');
 const closeCustomizeBtn = document.querySelector('#closeCustomizeBtn');
 const applyStyleBtn = document.querySelector('#applyStyleBtn');
 const selectedStyleEl = document.querySelector('#selectedStyle');
@@ -215,6 +216,7 @@ styleGrid.addEventListener('click',event=>{
 });
 customizeBtn.addEventListener('click',openCustomization);
 startCustomizeBtn.addEventListener('click',openCustomization);
+authCustomizeBtn.addEventListener('click',openCustomization);
 closeCustomizeBtn.addEventListener('click',closeCustomization);
 applyStyleBtn.addEventListener('click',()=>{
   selectedStyleKey=previewStyleKey;
